@@ -16,24 +16,48 @@ of dependencies -- libraries with well-defined interfaces. These subordinate
 libraries are versioned and managed through build tools. So what's different
 about morphics?
 
-... what's different about morphics ...
+The following characteristics of the caller/library relationship are each
+rare outside morphics, but guaranteed in morphics:
+
+* A morphic super-component routes all of its interactions with any particular
+  subcomponent through a single API data type. (This API data type is called a "face".
+  Morphic components are called "imps".) Other data types may be involved in
+  the interaction, but these data types are associated with the face -- the API --
+  and are independent of the imp -- the implementation.
+
+* The wiring of super-imps to sub-imps is entirely described in JSON. So
+  super-imps never make compile-time assumptions that they are using particular
+  sub-imps. The wiring can be changed by changing JSON "charters", or at
+  runtime.
+
+* Both faces and imps export runtime interfaces that describe themselves both
+  for human consumption and for machine consumption. So tooling can automate the
+  wiring. At one extreme, there can be a UI for interactively snapping together
+  imps into a module or a program. At the other extreme, programs can search
+  through the space of legal wirings, much like genetic algorithms.
+
+The value proposition of morphics is that these three unusual characteristics,
+when guaranteed together, enable a world of snap-together components that is
+easy to understand, easy to work with, and provides a rare level of code reuse.
 
 This implementation of morphics is in PureScript. To help make our explanation simpler
-by making it more concrete, this documentation is written in terms of the PureScript
-implementation. The underlying ideas are not implementation-specific.
+by making it more concrete, the rest of this documentation is written in terms of the
+PureScript implementation. The underlying ideas are not implementation-specific.
 
 A morphic component is called an "imp". (The name is a pun on "implementation"
 and demon.) Each imp forms the root component (potentially the sole component) of
-a corresponding data type, which is called the imp's "face". (The name is a pun on human face and "interface".) It is common for multiple imps to represent the same face.
+a corresponding data type, which is called the imp's "face". (The name is a pun on human
+face and "interface".) It is common for multiple imps to represent the same face.
 
 A tree or subtree of imps is called a "clan". A clan is a complete implementation
 of its root imp's face. This face is also considered to be the clan's face.
-A clan's face can be as simple as `Number`, in which case the clan is as simple as the number `42`. A face is described at runtime by a "meta-face", which is implemented by
+A clan's face can be as simple as `Number`, in which case the clan is as simple as
+the number `42`. A face is described at runtime by a "meta-face", which is implemented by
 a value of the record type `MetaFace`.
 
 A clan is constructed from a "charter", which is JSON. This can be a JSON object,
 array, or value, and is represented in PureScript as a `Foreign` value. The module that
-supports a given face usually provides a function that takes a charter argument
+supports a given face must provide a function that takes a charter argument
 and returns an instance of the face. This is called the "founder function" for
 the face. By convention, if the face is represented as a PureScript type called
 `FaceType`, the founder function is called `foundFaceType`.
@@ -57,7 +81,10 @@ import Control.Monad.Eff.Console (log)
 import Morphics.Number (foundNumber)
 
 main = do
-  charter = toForeign 42
+  charter = toForeign {
+    imp: "Morphics.Number.number"
+    data: 42
+  }
   answer :: Number
   answer = foundNumber charter
   log $ "Hello, World! The answer turns out to be " <> show answer <> "."
@@ -119,19 +146,24 @@ As a founder function constructs a clan, it fills each role with a "sept" -- a s
 It is up to the founder function how to capture the imp's septs and make them available
 to the imp for its operation.
 
-Although it is up to the founder function how to interpret charter JSON and create a clan,
-the normal convention is for the charter to be a JSON object with "imp" and "septs" fields.
+An imp is represented in charter JSON as an object with three fields:
+* imp: the label of the imp
+* septs (optional): an object where the keys are role labels and the values are septs
+* data (optional): additional data for use by the imp's founder function in constructing the imp
+
 For example, the following JSON would be a reasonable charter for our `orderByBlend` imp:
 
 ```JSON
 {
   "imp": "ItemOrder.orderByBlend",
   "septs": {
-    "s": 0.7,
-    "w": 0.3
+    "s": { "imp": "Morphics.Number.number", "data": 0.7 },
+    "w": { "imp": "Morphics.Number.number", "data" : 0.3 }
   }
 }
 ```
+
+FIXME: Make the following paragraphs more prescriptive.
 
 It is up to each face's `MetaFace` instance how an imp should be constructed from the charter JSON.
 Here again, there is a common convention. For any given face, such as our `ItemOrder`, the module
