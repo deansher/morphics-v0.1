@@ -37,7 +37,7 @@ rare outside morphics, but guaranteed in morphics:
   through the space of legal wirings, much like genetic algorithms.
 
 The value proposition of morphics is that these three unusual characteristics,
-when guaranteed together, enable a world of snap-together components that is
+when used together and applied consistently, enable a world of snap-together components that is
 easy to understand, easy to work with, and provides a rare level of code reuse.
 
 This implementation of morphics is in PureScript. To help make our explanation simpler
@@ -92,115 +92,108 @@ main = do
 
 Ok, that was silly -- and yet, complete. Let's move on to a more representative use case.
 
-Suppose we have a face that is a user-defined data type:
+Suppose we have a face that is the following PureScript data type:
 
 ```PureScript
 type ItemOrder = Item -> Item -> Ordering
 ```
 
-Suppose we want to have three implementations of `ItemOrder`:
+Suppose also that we want to have three implementations of `ItemOrder`:
 * `orderBySize :: ItemOrder`
 * `orderByWeight :: ItemOrder`
 * `orderByBlend :: Number -> Number -> ItemOrder` orders by `w * weight + s * size`
-
-So the charter for an `ItemOrder` needs to provide two pieces of information:
-* It needs to indicate which of the three functions to choose.
-* In the case of `orderByBlend`, it needs to supply `w` and `s`.
-
-An imp is described at runtime by a "meta-imp", which is represented
+Each implementation is simply a PureScript function. We will encapsulate each function
+in an imp. An imp is described at runtime by a "meta-imp", which is represented
 in PureScript by a value of the record type `MetaImp`.
 
-So, in our `ItemOrder` example, the charter needs to specify an imp of the `ItemOrder` face.
-We accomplish this by giving the charter an "imp" property:
+The charter for an `ItemOrder` needs to provide two pieces of information:
+* It needs to indicate which imp to use.
+* In the case of `orderByBlend`, it needs to supply `w` and `s`.
 
+Charter JSON has an "imp" property that specifies an imp by giving its label:
 ```PureScript
 bySizeCharter = { imp: "ItemOrder.orderBySizeLabel" }
 ```
 
-The PureScript implementation of morphics requires each imp to have a label,
-which is accessed through the `label` field `MetaImp` record type.
-Each imp label should be prefixed by the name of the module in which instances
-of that imp are created. In our example, we assume that the module is called "ItemOrder".
+An imp's label is defined through the `label` field of the `MetaImp` record type.
+By convention, each imp label is prefixed by the name of the
+module in which instances of that imp are created. In our example, we assume that the
+module is called "ItemOrder".
 
-In the charter for "bySizeCharter", we use the word "Label" in "orderBySizeLabel" to avoid giving
-the impression that the label magically refers to the function name. Although PureScript's
-JavaScript runtime would make such magic possible, the morphics implementation uses no
-such magic: labels are just strings that are compared at runtime. In practice, a much more
-likely choice of label for the `orderBySize` imp would be simply "ItemOrder.orderBySize".
+In our `bySizeCharter` example, we gratuitously use the word "Label" in "orderBySizeLabel"
+to avoid giving the impression that the label magically refers to the function name.
+Although PureScript's JavaScript runtime would make such magic possible, the morphics
+implementation uses no such magic: labels are just strings that are compared at runtime.
+In practice, a much more likely choice of label for the `orderBySize` imp would be
+simply "ItemOrder.orderBySize".
 
 The `orderByBlend` imp adds an interesting new twist: it has parameters `w` and `s`.
-Although the parameters in this particular example are simply numbers, they could
-have any face. They could be represented by complex clans of their own.
+Such imp parameters are called "roles". Although in this particular example they
+are simply numbers, they could have any face. They could be implemented by complex
+clans of their own.
 
-Imp parameters such as `w` and `s` are called "roles". Each meta-imp declares the
-roles required by that imp. These are exposed through the `roles` field of the `MetaImp`
-record type: `roles :: Array Role`. Just as imps have labels, roles and faces
-also have labels. The role labels in our example are "w" and "s".
-`Role` is a simple record type:
-
+Each meta-imp declares the roles required by that imp. These are exposed through the
+`roles` field of the `MetaImp` record type: `roles :: Array Role`. Just as imps have labels, roles and faces
+also have labels. The role labels in our example are "w" and "s". `Role` is a simple record type:
 ```PureScript
 type Role = { label :: String, faceLabel :: String }
 ```
 
-As a founder function constructs a clan, it fills each role with a "sept" -- a subordinate clan.
+As a founder function constructs a clan, it implements each role with a "sept" -- a subordinate clan.
 It is up to the founder function how to capture the imp's septs and make them available
 to the imp for its operation.
 
 An imp is represented in charter JSON as an object with three fields:
 * imp: the label of the imp
-* septs (optional): an object where the keys are role labels and the values are septs
+* roles (optional): an object where the keys are role labels and the values are sept charters
 * data (optional): additional data for use by the imp's founder function in constructing the imp
 
 For example, the following JSON would be a reasonable charter for our `orderByBlend` imp:
-
 ```JSON
 {
   "imp": "ItemOrder.orderByBlend",
-  "septs": {
+  "roles": {
     "s": { "imp": "Morphics.Number.number", "data": 0.7 },
-    "w": { "imp": "Morphics.Number.number", "data" : 0.3 }
+    "w": { "imp": "Morphics.Number.number", "data": 0.3 }
   }
 }
 ```
 
-FIXME: Make the following paragraphs more prescriptive.
-
-It is up to each face's `MetaFace` instance how an imp should be constructed from the charter JSON.
-Here again, there is a common convention. For any given face, such as our `ItemOrder`, the module
-implementing that face builds a map from imp label to corresponding imp founder function. If the
-PureScript type for the face is `FaceType`, then each imp founder function has the type `Foreign -> FaceType`,
-which maps a JSON charter (represented in PureScript as `Foreign`) to a value of `FaceType`.
-So the module implementing the face builds a `StrMap (Foreign -> FaceType)`. The `Morphics` module
-provides a suitable type alias:
+To support the implementation of face and imp founder functions,
+the `Morphics` package provides a `MorphicSpace` monad, with the following operations:
 
 ```PureScript
-type ImpFounderMap face = StrMap (Foreign -> face)
+-- Provide a MetaImp (which contains the imp's name).
+-- It is fine to register multiple `MetaImp`s for the same imp name and
+-- face type, so long as those `MetaImp`s are Eq.
+registerImp  :: forall face. MetaImp face -> MorphicSpace Unit
+
+-- Provide a MetaFace.
+-- It is fine to register multiple `MetaFace`s for the same
+-- face type, so long as those `MetaFace`s are Eq.
+registerFace :: forall face. MetaFace face -> MorphicSpace Unit
+
+-- Obtain a MetaImp for the given imp name and face type.
+-- If no such MetaImp has been registered, the computation continues through its "error check only" flow.
+getImp  :: forall face. String -> MorphicSpace (MetaImp face)
+
+-- Obtain a MetaFace for the given face type.
+-- If no such MetaImp has been registered, the computation continues through its "error check only" flow.
+getFace :: forall face. MorphicSpace (MetaFace face)
+
+-- Record an error.
+appendError :: String -> MorphicSpace Unit
+
+-- Switch to this monad's "error check only" flow.
+errorCheckOnly :: forall a. MorphicSpace a
 ```
 
-The module that provides support for a face (the "face module") usually provides a function to obtain its
-`MetaFace` instance. This function takes an `ImpFounderMap` parameter in case the caller knows imps of that
-face that might not be known to the face module, but that should be supported by the face module's founder
-function. Similarly, a module that implements one or more imps of a particular face generally exports an
-`ImpFounderMap` value that maps imp label to imp founder function for those imps.
-
-If our `ItemOrder` face were implemented according to this convention, and if it followed the conventional
-naming pattern, it would supply the following function:
-
+Any module that provides imps or faces must export a function with the following
+name and signature:
 ```PureScript
-itemOrderMetaFace :: ImpFounderMap -> MetaFace
+registerMorphicElements :: MorphicSpace Unit
 ```
 
-In our example, we have assumed that the `ItemOrder` module implements both the face and all imps
-that it knows about. So it needs no special protocol for collecting the imps it knows about: it can
-simply hardwire them into `itemOrderMetaFace`, or however else it chooses. But if there were a separate
-module (we might imagine `CostSensitiveItemOrders`) that provided additional imps of `ItemOrder`,
-then by convention it would export the following value:
-
-```PureScript
-itemOrderImps :: ImpFounderMap
-```
-
-This value could be used by the `ItemOrder` module if it knows about the `CostSensitiveItemOrders`
-module. It could also be used by the caller of `ItemOrder.itemOrderMetaFace` if that caller wanted to
-make sure the `CostSensitiveItemOrders` imps were supported, and didn't know whether the `ItemOrder`
-module supported them directly.
+Any module that depends on other modules that may want to provide imps or faces
+must invoke the `registerMorphicElements` functions of those modules from its own
+`registerMorphicElements` function.
