@@ -46,7 +46,7 @@ points, so the modules form a tree of behaviors.
 
 Each subordinate module refines its parent's behavior: when we install a
 subordinate module into a parent's plug-in point, the resulting combination of
-modules has more concrete behavior than the parent alone. If we fill out an
+modules has a more concrete behavior than the parent alone. If we fill out an
 entire tree of subordinate modules -- by starting with one module and then
 recursively filling in subordinate modules for every plug-in point -- the
 completed module tree has concrete behavior. It can be executed. It does one
@@ -63,11 +63,11 @@ implemented correctly. We typically think of the API as being defined by
 the subordinate module -- or at least defined independently as a standard --
 rather than being defined by the parent module.
 
-When we use "dependency decomposition", we know that our subordinate APIs are
-hiding some details from us. We know we are giving them latitude to implement
-these details in different ways. We sometimes use portable APIs that we know are
+When we use "dependency decomposition", we know that our subordinate APIs hide
+details. We know we are giving them latitude to implement these details in
+different ways. We sometimes use portable APIs that we expect will be
 implemented in very different ways on different platforms. But we write our
-higher-level code with the belief that it fully specifies  our program's
+higher-level code with the belief that it fully specifies our program's
 behavior down to whatever level of detail we care about.
 
 When we use "behavior decomposition", we approach things differently. We
