@@ -1,13 +1,14 @@
 # Morphics
 
-Morphics is a new way of writing software that enables new kinds of code reuse,
-and that allows non-programmers and machine-learning algorithms to assemble
-modules in novel and meaningful ways. We gain these benefits by adding a new
-dimension for software decomposition, which we call "behavior decomposition".
-This is fundamentally different from the mainstream approach to decomposing
-software, which we call "dependency decomposition". A morphic program or module
-is decomposed along both dimensions: it still uses APIs from "dependency"
-libraries like mainstream software, but it also uses subordinate behaviors.
+Morphics is a new way of writing software that enables new kinds of code reuse.
+It allows programmers, non-programmers and machine-learning algorithms to
+assemble modules in novel but meaningful ways. We gain these benefits by adding
+a new dimension for software decomposition, which we call "behavior
+decomposition". This is fundamentally different from the mainstream approach to
+decomposing software, which, in contrast, we call "dependency decomposition". A
+morphic program or module is decomposed along both dimensions: it still uses
+APIs from "dependency" libraries like mainstream software, but it also uses
+subordinate behaviors.
 
 Morphics allows us to write software modules that define spaces of possible
 behaviors instead of just single, specific behaviors. This is more difficult for
@@ -16,9 +17,8 @@ module might do. As programmers, we are already used to implementing lower-level
 abstractions that behave sensibly when recombined in novel ways by higher-level
 code. Now, in morphics, we also expect ourselves to implement higher-level
 abstractions that behave sensibly in the face of novel behavior by subordinate
-libraries. In return, we get new kinds of reusability. We get modules that can
-be assembled into a broad range of behaviors by non-programmer users or by
-machine learning.
+libraries. In return, we get modules that can be assembled into a broad range of
+behaviors.
 
 We can picture behavior decomposition as top-down templating. A parent module
 acts as a template. At an abstract level, it implements a particular behavior,
@@ -27,31 +27,33 @@ subordinate modules. When we assemble a complete tree of morphic modules, this
 pins down all behavioral details and creates a runnable program.
 
 The power of morphics comes from our ability to make larger or smaller
-adjustments to morphic program behavior by swapping out modules higher in the
-tree or deeper in the tree. Since subordinate modules refine the behavior of
-parent modules, a module replacement deep in the tree usually yield a modest
-change in overall behavior. Any given collection of morphic modules (not yet
-assembled into a program) defines an abstract, high-level language that
-expresses a range of possible program or module behaviors. This language is not
-brittle, in the sense that there are simply defined syntactic changes (replacing
-modules deep in the tree) that result in small, sensible changes to program
-behavior. The range of behaviors defined by a collection of morphic modules is
-dense in useful behaviors and relatively easy to understand, so it  can be
-efficiently explored by non-programming end users or by machine learning.
+adjustments to the behavior of a morphic program or module by swapping out
+modules higher in the tree or deeper in the tree. Since subordinate modules
+refine the behavior of parent modules, a module replacement deep in the tree
+usually yields a modest change in overall behavior.
+
+Any given collection of morphic modules (not yet assembled into a program)
+defines an abstract, high-level language that expresses a range of possible
+program or module behaviors. This language is not brittle, in the sense that
+there are simply defined syntactic changes (replacing modules deep in the tree)
+that result in small, sensible changes to program behavior. The range of
+behaviors defined by a collection of morphic modules is dense in useful
+behaviors and relatively easy to understand, so it  can be efficiently explored
+by non-programming end users or by machine learning.
 
 ## Contrasting "Behavior Decomposition" with "Dependency Decomposition"
 
 When we write a software module with behavior decomposition, we implement an
-abstract behavior, while deliberately leaving room for the parent module's
-behavior to be refined by a later choice of subordinate modules. For example, we
-might implement a parent module that defines full-text search as an abstract
-behavior. We might define a plug-in point for a subordinate module that
-interprets the text string, plus another plug-in point for a subordinate module
-that searches a particular text database. When we define a plug-in point, we
-specify an interface that the subordinate module must implement. Any given
-plug-in interface is commonly implemented by multiple subordinate modules that
-provide alternative behaviors for the interface. Subordinate modules can define
-their own plug-in points, so the modules form a tree of behaviors.
+abstract behavior, while deliberately leaving room for this behavior to be
+refined by a later choice of subordinate modules. For example, we might
+implement a parent module that defines full-text search as an abstract behavior.
+We could define a plug-in point for a subordinate module that interprets the
+text string, plus another plug-in point for a subordinate module that searches a
+particular text database. When we define a plug-in point, we specify an
+interface that the subordinate module must implement. Any given plug-in
+interface is commonly implemented by multiple subordinate modules that provide
+alternative behaviors for the interface. Subordinate modules can define their
+own plug-in points, so the modules form a tree of behaviors.
 
 Each subordinate module refines its parent's behavior: when we install a
 subordinate module into a parent's plug-in point, the resulting combination of
@@ -84,9 +86,11 @@ parent module defines a space of possible behaviors. It deliberately leaves its
 own behavior open-ended -- defining plug-in points with interfaces that can have
 multiple alternative implementations to further specify behavior.
 
-## Other Features of Morphics
+## The Features and Terminology of Morphics
 
-## Morphic programming
+Morphics has other unique or uncommon features. Generally, these features
+help put the "top-down templating" character of behavior decomposition into
+practice:
 
 * A morphic super-behavior routes all of its interactions with any particular
   subbehavior through a single API data type. (This API data type is called a "face".
@@ -108,6 +112,8 @@ multiple alternative implementations to further specify behavior.
 The value proposition of morphics is that these three unusual characteristics,
 when used together and applied consistently, enable a world of snap-together behaviors that is
 easy to understand, easy to work with, and provides a rare level of code reuse.
+
+## Morphic Programming
 
 This implementation of morphics is in PureScript. To help make our explanation simpler
 by making it more concrete, the rest of this documentation is written in terms of the
