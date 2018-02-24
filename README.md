@@ -1,3 +1,5 @@
+_Deprecated: replaced by [deansher/morphics](https://github.com/deansher/morphics)_
+
 # Morphics
 
 Morphics is a new way of writing software that enables new kinds of code reuse.
